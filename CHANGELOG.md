@@ -31,7 +31,7 @@ Fixes:
 - Flip symbol range in LSP goto commands ([#6794](https://github.com/helix-editor/helix/pull/6794))
 - Fix runtime toggling of the `mouse` option ([#6675](https://github.com/helix-editor/helix/pull/6675))
 - Fix panic in inlay hint computation when view anchor is out of bounds ([#6883](https://github.com/helix-editor/helix/pull/6883))
-- Change Git repository discovery to worktree-only ([#6890](https://github.com/helix-editor/helix/pull/6890))
+- Significantly improve performance of git discovery on slow file systems ([#6890](https://github.com/helix-editor/helix/pull/6890))
 - Downgrade gix log level to info ([#6915](https://github.com/helix-editor/helix/pull/6915))
 - Conserve BOM and properly support saving UTF16 files ([#6497](https://github.com/helix-editor/helix/pull/6497))
 - Correctly handle completion re-request ([#6594](https://github.com/helix-editor/helix/pull/6594))
