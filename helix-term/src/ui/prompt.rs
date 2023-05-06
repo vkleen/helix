@@ -297,7 +297,7 @@ impl Prompt {
         direction: CompletionDirection,
     ) {
         (self.callback_fn)(cx, &self.line, PromptEvent::Abort);
-        let values = match cx.editor.registers.read(register) {
+        let values = match cx.registers.read(register, cx.editor) {
             Some(values) if !values.is_empty() => values,
             _ => return,
         };
@@ -458,7 +458,7 @@ impl Prompt {
             // latest value in the register list
             match self
                 .history_register
-                .and_then(|reg| cx.editor.registers.last(reg))
+                .and_then(|reg| cx.registers.last(reg, cx.editor))
                 .map(|entry| entry.into())
             {
                 Some(value) => (value, true),
@@ -558,7 +558,7 @@ impl Component for Prompt {
                 } else {
                     let last_item = self
                         .history_register
-                        .and_then(|reg| cx.editor.registers.last(reg).cloned())
+                        .and_then(|reg| cx.registers.last(reg, cx.editor))
                         .map(|entry| entry.into())
                         .unwrap_or_else(|| Cow::from(""));
 
@@ -569,7 +569,11 @@ impl Component for Prompt {
                         if last_item != self.line {
                             // store in history
                             if let Some(register) = self.history_register {
-                                cx.editor.registers.push(register, self.line.clone());
+                                if let Err(err) =
+                                    cx.registers.push(register, cx.editor, self.line.clone())
+                                {
+                                    cx.editor.set_error(err.to_string())
+                                }
                             };
                         }
 
@@ -606,27 +610,16 @@ impl Component for Prompt {
             ctrl!('q') => self.exit_selection(),
             ctrl!('r') => {
                 self.completion = cx
-                    .editor
                     .registers
-                    .inner()
-                    .iter()
-                    .map(|(ch, reg)| {
-                        let content = reg
-                            .read()
-                            .get(0)
-                            .and_then(|s| s.lines().next().to_owned())
-                            .unwrap_or_default();
-                        (0.., format!("{} {}", ch, &content).into())
-                    })
+                    .iter_preview()
+                    .map(|(ch, preview)| (0.., format!("{} {}", ch, &preview).into()))
                     .collect();
                 self.next_char_handler = Some(Box::new(|prompt, c, context| {
                     prompt.insert_str(
-                        context
-                            .editor
+                        &context
                             .registers
-                            .read(c)
-                            .and_then(|r| r.first())
-                            .map_or("", |r| r.as_str()),
+                            .first(c, context.editor)
+                            .unwrap_or_default(),
                         context.editor,
                     );
                 }));

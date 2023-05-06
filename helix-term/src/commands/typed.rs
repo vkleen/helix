@@ -2178,7 +2178,7 @@ fn clear_register(
 
     ensure!(args.len() <= 1, ":clear-register takes at most 1 argument");
     if args.is_empty() {
-        cx.editor.registers.clear();
+        cx.registers.clear();
         cx.editor.set_status("All registers cleared");
         return Ok(());
     }
@@ -2188,7 +2188,7 @@ fn clear_register(
         format!("Invalid register {}", args[0])
     );
     let register = args[0].chars().next().unwrap_or_default();
-    match cx.editor.registers.remove(register) {
+    match cx.registers.remove(register) {
         Some(_) => cx
             .editor
             .set_status(format!("Register {} cleared", register)),
