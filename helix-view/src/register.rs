@@ -3,9 +3,9 @@ use std::{borrow::Cow, collections::HashMap};
 use anyhow::Result;
 use helix_core::hashmap;
 
-use crate::Editor;
+use crate::{document::SCRATCH_BUFFER_NAME, Editor};
 
-pub const SPECIAL_REGISTERS: [char; 3] = ['_', '#', '.'];
+pub const SPECIAL_REGISTERS: [char; 4] = ['_', '#', '.', '%'];
 
 pub trait Register: std::fmt::Debug {
     fn name(&self) -> char;
@@ -96,6 +96,7 @@ impl Default for Registers {
             '_' => Box::new(BlackholeRegister::default()) as Box<dyn Register>,
             '#' => Box::new(SelectionIndexRegister::default()),
             '.' => Box::new(SelectionContentsRegister::default()),
+            '%' => Box::new(DocumentPathRegister::default()),
         );
 
         Self { inner }
@@ -213,5 +214,30 @@ impl Register for SelectionContentsRegister {
             .fragments(text)
             .map(Cow::into_owned)
             .collect()
+    }
+}
+
+#[derive(Debug, Default)]
+struct DocumentPathRegister {}
+
+impl Register for DocumentPathRegister {
+    fn name(&self) -> char {
+        '%'
+    }
+
+    fn preview(&self) -> &str {
+        "<document path>"
+    }
+
+    fn read(&self, editor: &Editor) -> Vec<String> {
+        let doc = doc!(editor);
+
+        let path = doc
+            .path()
+            .as_ref()
+            .map(|p| p.to_string_lossy())
+            .unwrap_or_else(|| SCRATCH_BUFFER_NAME.into());
+
+        vec![path.into()]
     }
 }
