@@ -1,11 +1,11 @@
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 use anyhow::Result;
 use helix_core::hashmap;
 
 use crate::Editor;
 
-pub const SPECIAL_REGISTERS: [char; 1] = ['_'];
+pub const SPECIAL_REGISTERS: [char; 3] = ['_', '#', '.'];
 
 pub trait Register: std::fmt::Debug {
     fn name(&self) -> char;
@@ -94,6 +94,8 @@ impl Default for Registers {
         // Prepopulate the special registers.
         let inner = hashmap!(
             '_' => Box::new(BlackholeRegister::default()) as Box<dyn Register>,
+            '#' => Box::new(SelectionIndexRegister::default()),
+            '.' => Box::new(SelectionContentsRegister::default()),
         );
 
         Self { inner }
@@ -167,5 +169,49 @@ impl Register for BlackholeRegister {
 
     fn push(&mut self, _editor: &mut Editor, _value: String) -> Result<()> {
         Ok(())
+    }
+}
+
+#[derive(Debug, Default)]
+struct SelectionIndexRegister {}
+
+impl Register for SelectionIndexRegister {
+    fn name(&self) -> char {
+        '#'
+    }
+
+    fn preview(&self) -> &str {
+        "<selection indices>"
+    }
+
+    fn read(&self, editor: &Editor) -> Vec<String> {
+        let (view, doc) = current_ref!(editor);
+
+        (1..=doc.selection(view.id).len())
+            .map(|i| i.to_string())
+            .collect()
+    }
+}
+
+#[derive(Debug, Default)]
+struct SelectionContentsRegister {}
+
+impl Register for SelectionContentsRegister {
+    fn name(&self) -> char {
+        '.'
+    }
+
+    fn preview(&self) -> &str {
+        "<selection contents>"
+    }
+
+    fn read(&self, editor: &Editor) -> Vec<String> {
+        let (view, doc) = current_ref!(editor);
+        let text = doc.text().slice(..);
+
+        doc.selection(view.id)
+            .fragments(text)
+            .map(Cow::into_owned)
+            .collect()
     }
 }
